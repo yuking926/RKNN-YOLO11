@@ -15,13 +15,18 @@
 
 1. 正常安装 YOLO11 环境（建议使用 Anaconda）。
 2. 卸载环境中的官方 `ultralytics`：
-   ```bash
-   pip uninstall ultralytics
-下载本仓库的 ultralytics_yolo11 到本地，在该工作空间中进行 ONNX 转换。
+```
+pip uninstall ultralytics
+```
+3. 下载本仓库的 `ultralytics_yolo11` 到本地，在该工作空间中进行 ONNX 转换。
 
-2. 导出 ONNX 模型
-确保环境满足 ./requirements.txt 后执行：
+---
 
+## 2. 导出 ONNX 模型
+
+确保环境满足 `./requirements.txt` 后执行：
+
+```
 # 修改 ./ultralytics/cfg/default.yaml 中 model 路径：
 # - yolo11n.pt        → 检测模型
 # - yolo11n-seg.pt    → 分割模型
@@ -30,57 +35,71 @@
 
 export PYTHONPATH=./
 python ./ultralytics/engine/exporter.py
+```
+
 执行完成后生成 ONNX 模型，例如：
-
-
+```
 yolo11n.pt → yolo11n.onnx
-使用本仓库的 Ultralytics 确保 ONNX 与 RKNN 官方兼容，避免转换失败。
+```
 
-3. 配置开发板环境
-下载 RKNN 官方仓库：
+> 使用本仓库的 Ultralytics 确保 ONNX 与 RKNN 官方兼容，避免转换失败。
 
-rknn-toolkit2-2.3.2（示例版本）
+---
 
-安装相关组件：
+## 3. 配置开发板环境
 
-rknn-toolkit2 / rknn-toolkit-lite2 → Python 包
+1. 下载 RKNN 官方仓库：
+   - `rknn-toolkit2-2.3.2`（示例版本）
+2. 安装相关组件：
+   - `rknn-toolkit2` / `rknn-toolkit-lite2` → Python 包
+   - `rknpu2` → 驱动（部分板子已预装）
+3. 配置 Conda 环境：
+   - 安装 `rknn-toolkit2/packages` 和 `rknn-toolkit-lite2/packages` 中对应 Python 的 wheel 文件。
+   - 安装对应 `requirements.txt`。
 
-rknpu2 → 驱动（部分板子已预装）
+> 完成后，开发板环境即配置完成。
 
-配置 Conda 环境：
+---
 
-安装 rknn-toolkit2/packages 和 rknn-toolkit-lite2/packages 中对应 Python 的 wheel 文件。
+## 4. ONNX → RKNN 模型转换
 
-安装对应 requirements.txt。
+仓库中提供 `RKNN-YOLO11/convert.py`：
 
-完成后，开发板环境即配置完成。
-
-4. ONNX → RKNN 模型转换
-仓库中提供 RKNN-YOLO11/convert.py：
-
+```
 python convert.py ../model/yolo11n.onnx rk3588
-替换 ../model/yolo11n.onnx 为自己的 ONNX 模型路径。
+```
 
-替换 rk3588 为目标平台。
+- 替换 `../model/yolo11n.onnx` 为自己的 ONNX 模型路径。
+- 替换 `rk3588` 为目标平台。
 
-可选：量化精度优化
-在 convert.py 中修改：
+### 可选：量化精度优化
+
+在 `convert.py` 中修改：
+```
 DATASET_PATH = 'COCO/coco_subset_20.txt'
-替换为自己的校准数据集，提高量化精度。
+```
 
-转换完成后生成 RKNN 模型，默认输出：
+- 替换为自己的校准数据集，提高量化精度。
+- 转换完成后生成 RKNN 模型，默认输出：
+```
 models/yolo11.rknn
+```
 
-5. 测试 RKNN 模型
-提供 test.py 用于推理测试：
+---
 
-原用于安全帽检测模型图片推理。
+## 5. 测试 RKNN 模型
 
-若推理自定义模型，可修改路径和类别配置。
+提供 `test.py` 用于推理测试：
 
-推荐使用 rknn-toolkit-lite2，依赖少且简单。
+- 原用于安全帽检测模型图片推理。
+- 若推理自定义模型，可修改路径和类别配置。
+- 推荐使用 **rknn-toolkit-lite2**，依赖少且简单。
 
-6. 部署流程概览
+---
+
+## 6. 部署流程概览
+
+```
 YOLO11 环境配置
         ↓
 导出 ONNX 模型
@@ -90,29 +109,40 @@ YOLO11 环境配置
 ONNX → RKNN 模型量化转换
         ↓
 test.py 推理测试
+```
+
 完成以上步骤，即可在 RKNN 开发板上部署 YOLO11 模型。
 
+---
 
-# YOLO11 在 RKNN 开发板上的部署指南
+## 🔑 小提示
+
+- ONNX 模型必须使用本仓库 Ultralytics 转换，保证与 RKNN 官方兼容。
+- 开发板的 Python 环境需与 RKNN 工具包版本对应。
+- 量化精度可通过替换校准数据集提高。
+- `test.py` 可根据实际模型和数据灵活修改。
+
+## 自述
+
 为方便在RKNN开发板上面部署YOLO11模型，把关键流程自己写了一遍，避免遗忘
 
 首先需要在自己笔记本或者开发板配一遍YOLO11的环境，其实就是把ultralytics和Pytorch配一遍，但是因为RKNN官方为了能够适配他们自身模型的转化，是把ultralytics修改过的，所以你使用官方的ultralytics转化的ONNX模型和采取RKNN的ultralytics转化的ONNX输出是不一样的，大家可以自行使用netron来观察两个onnx的区别
 我个人建议按照正常流程配一遍YOLO11的环境，我采取的Anconda环境，把YOLO11的环境配置了一遍，然后pip uninstall ultralytics，把环境里面的ultralytics删除，然后把我仓库的ultralytics_yolo11下载至本地，打开工作空间，在这里面进行转化onnx，具体流程如下
 
-## 导出onnx模型
+导出onnx模型
 在满足 ./requirements.txt 的环境要求后，执行以下语句导出模型
 
 ```
-# 调整 ./ultralytics/cfg/default.yaml 中 model 文件路径，默认为 yolo11n.pt，若自己训练模型，请调接至对应的路径。支持检测、分割、姿态、旋转框检测模型。
-# 如填入 yolo11n.pt 导出检测模型
-# 如填入 yolo11n-seg.pt 导出分割模型
-# 如填入 yolo11n-pose.pt 导出姿态模型
-# 如填入 yolo11n-obb.pt 导出OBB模型
+调整 ./ultralytics/cfg/default.yaml 中 model 文件路径，默认为 yolo11n.pt，若自己训练模型，请调接至对应的路径。支持检测、分割、姿态、旋转框检测模型。
+如填入 yolo11n.pt 导出检测模型
+如填入 yolo11n-seg.pt 导出分割模型
+如填入 yolo11n-pose.pt 导出姿态模型
+如填入 yolo11n-obb.pt 导出OBB模型
 
 export PYTHONPATH=./
 python ./ultralytics/engine/exporter.py
 
-# 执行完毕后，会生成 ONNX 模型. 假如原始模型为 yolo11n.pt，则生成 yolo11n.onnx 模型。
+执行完毕后，会生成 ONNX 模型. 假如原始模型为 yolo11n.pt，则生成 yolo11n.onnx 模型。
 
 这样调用的U包可以确保为RKNN官方修改后的ultralytics，避免出现ONNX模型输出不一致，导致后期RKNN模型无法使用
 
